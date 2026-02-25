@@ -1,1 +1,585 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transport-Manager — Ski Bus 73</title>
+<style>
+  :root{
+    --line:#1e90ff; /* <-- À REMPLACER par le code couleur officiel */
+    --bg:#ffffff;
+    --soft:#f6f6f7;
+    --border:#e6e6ea;
+    --text:#111;
+    --muted:#5b5b66;
+  }
 
+  body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px;}
+
+  .card{
+    border:1px solid var(--border);
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+    box-shadow:0 6px 18px rgba(0,0,0,.04);
+  }
+
+  .topbar{
+    background:linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,0)) , var(--line);
+    color:#fff;
+    padding:14px 16px;
+    position:relative;
+  }
+  .topbar:after{
+    content:"";
+    position:absolute;left:0;top:0;bottom:0;width:8px;
+    background:rgba(0,0,0,.12);
+  }
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;}
+  .linepill{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.22);
+    padding:6px 10px;border-radius:999px;font-weight:800;
+  }
+  .subpill{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.18);
+    padding:6px 10px;border-radius:999px;font-weight:800;
+  }
+  .title{font-size:18px;font-weight:900;margin:6px 0 0;}
+  .subtitle{opacity:.95;margin:4px 0 0;font-size:13px}
+
+  .content{padding:14px 16px 16px;}
+  .muted{color:var(--muted)}
+
+  .info{
+    border:1px solid var(--border);
+    background:var(--soft);
+    border-radius:12px;
+    padding:10px 12px;
+    display:flex;gap:12px;flex-wrap:wrap;
+    align-items:end;justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .info .k{font-weight:900}
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 10px;border-radius:999px;
+    border:1px solid var(--border);
+    background:#fff;color:var(--muted);
+    font-size:12px;font-weight:900;
+  }
+  .badgeDot{width:10px;height:10px;border-radius:999px;background:var(--line);}
+
+  input[type="date"]{
+    padding:6px 8px;border-radius:8px;border:1px solid #ddd;
+    font-family:inherit;font-weight:700;
+  }
+
+  /* Bandeau fréquences */
+  .freqCard{
+    border:1px solid var(--border);
+    border-radius:14px;
+    overflow:hidden;
+    margin-bottom:12px;
+    background:#fff;
+  }
+  .freqHead{
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  }
+  .freqBar{display:flex;width:100%;min-height:54px;}
+  .seg{
+    position:relative;
+    padding:10px 10px 10px 12px;
+    border-right:1px solid rgba(0,0,0,.06);
+    display:flex;flex-direction:column;justify-content:center;
+    background:#fff;
+  }
+  .seg:last-child{border-right:0}
+  .seg .t{font-weight:900;font-size:13px}
+  .seg .s{color:var(--muted);font-weight:900;font-size:12px;margin-top:2px}
+  .seg:before{
+    content:"";
+    position:absolute;left:0;top:0;bottom:0;width:6px;
+    background:var(--line);
+    opacity:.18;
+  }
+  .seg[data-f="20"]:before{opacity:.42;}
+  .seg[data-f="40"]:before{opacity:.22;}
+  .seg[data-f="none"]{background:#f2f2f4;color:#9a9aa5;}
+  .seg[data-f="none"] .t{font-weight:800;}
+  .seg[data-f="none"]:before{opacity:.06;}
+
+  /* Grille */
+  .gridCard{border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+  .gridHead{
+    background:#fff;
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  }
+  .gridHead strong{font-size:14px}
+  .dirTitle{display:flex;align-items:center;gap:8px;font-weight:900;}
+  .dirBar{width:10px;height:10px;border-radius:3px;background:var(--line);}
+
+  .tableWrap{overflow:auto;}
+  table{width:100%;border-collapse:collapse;min-width:820px;}
+  th,td{border-top:1px solid var(--border);padding:9px 10px;vertical-align:top;}
+  thead th{background:#fff;position:sticky;top:0;z-index:2}
+  .hcol{width:70px;color:var(--muted);font-weight:900;white-space:nowrap;}
+  .mins{font-variant-numeric:tabular-nums;line-height:1.6;}
+  .mins .chip{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:28px;height:22px;padding:0 6px;
+    border-radius:999px;border:1px solid var(--border);
+    background:#fff;margin:0 6px 6px 0;font-weight:800;
+  }
+  .empty{color:#9a9aa5}
+  tr.cut td{border-top:2px solid rgba(0,0,0,.14);}
+  tr.cut td:first-child{position:relative;}
+  tr.cut td:first-child:before{
+    content:"";
+    position:absolute;left:0;top:-2px;height:2px;width:100%;
+    background:linear-gradient(90deg, var(--line), rgba(0,0,0,0));
+  }
+  tr.peak td{background:rgba(0,0,0,.02);}
+  tr.peak td .chip{border-color:rgba(0,0,0,.12);}
+
+  .legend{
+    margin-top:10px;
+    color:var(--muted);
+    font-size:12px;line-height:1.5;
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  }
+
+  .icon{width:16px;height:16px;display:inline-block;vertical-align:-3px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="card">
+    <div class="topbar">
+      <div class="row">
+        <div>
+          <div class="linepill">
+            <svg class="icon" viewBox="0 0 24 24" fill="none">
+              <path d="M4 16V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <path d="M6 16h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <path d="M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" fill="white"/>
+              <path d="M16.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" fill="white"/>
+            </svg>
+            Ski Bus 73
+          </div>
+          <div class="title" id="lineTitle">Mont Ludorgue ⇄ Ludorgue vallée</div>
+          <div class="subtitle">Fiche horaire — grille par heure</div>
+        </div>
+
+        <div class="subpill">
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M7 3v3M17 3v3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M4 8h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M6 21h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" stroke="white" stroke-width="2"/>
+          </svg>
+          <span id="todayTxt">Horaires du jour</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="info">
+        <div>
+          <div class="muted">Service du jour</div>
+          <div class="k" id="periodLine">…</div>
+        </div>
+
+        <div>
+          <div class="muted">Premier départ</div>
+          <div class="k" id="firstDeparture">—</div>
+        </div>
+
+        <div>
+          <div class="muted">Dernier départ</div>
+          <div class="k" id="lastDeparture">—</div>
+        </div>
+
+        <div>
+          <div class="muted">Choisir une date</div>
+          <input type="date" id="datePicker">
+        </div>
+
+        <div class="badge" id="gridBadge"><span class="badgeDot"></span> …</div>
+      </div>
+
+      <div class="freqCard">
+        <div class="freqHead">
+          <strong>Fréquences</strong>
+          <span class="badge"><span class="badgeDot"></span> Synthèse du service</span>
+        </div>
+        <div class="freqBar" id="freqBar"></div>
+      </div>
+
+      <div class="gridCard">
+        <div class="gridHead">
+          <strong>Départs</strong>
+          <span class="badge"><span class="badgeDot"></span> Ski Bus 73</span>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="hcol">Heure</th>
+                <th>
+                  <span class="dirTitle"><span class="dirBar"></span><span id="dirATxt">Mont Ludorgue → Ludorgue vallée</span></span>
+                </th>
+                <th>
+                  <span class="dirTitle"><span class="dirBar"></span><span id="dirBTxt">Ludorgue vallée → Mont Ludorgue</span></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div>Jours fériés (France) = <b>Dimanche & JF</b>.</div>
+        <div class="muted">Fréquences calculées automatiquement à partir des plages.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   CONFIG SKI BUS 73
+========================= */
+const LINE = {
+  color: "#1e90ff", /* <-- À REMPLACER par le code couleur officiel */
+  terminusA: "Mont Ludorgue",
+  terminusB: "Ludorgue vallée"
+};
+
+/* Période d'exploitation (inclusives) */
+const OPERATE_START = "2025-12-01";
+const OPERATE_END   = "2026-04-12";
+
+/* =========================
+   VACANCES SCOLAIRES (inclusives) 2025-2026
+========================= */
+const VACANCES = [
+  ["2025-10-18","2025-11-02"],
+  ["2025-12-20","2026-01-04"],
+  ["2026-02-07","2026-02-22"],
+  ["2026-04-04","2026-04-19"],
+  ["2026-07-04","2026-08-30"]
+];
+
+/* =========================
+   SERVICES SKI BUS 73 (TES FRÉQUENCES)
+   Chaque entrée = [deHH, deMM, àHH, àMM, fréquenceMinutes]
+   fin exclusive ; 0h00 = 24:00
+========================= */
+const SERVICES = {
+  normal: {
+    luve: [
+      [5,0, 7,0, 40],
+      [7,0, 9,0, 20],
+      [9,0, 16,0, 40],
+      [16,0, 20,0, 20],
+    ],
+    sa: [
+      [5,0, 9,0, 40],
+      [9,0, 18,0, 20],
+      [18,0, 20,0, 40],
+    ],
+    di: [
+      [6,0, 9,0, 40],
+      [9,0, 18,0, 20],
+      [18,0, 23,0, 40],
+    ]
+  },
+
+  vacances: {
+    luve: [
+      [5,0, 7,0, 40],
+      [7,0, 9,0, 20],
+      [9,0, 16,0, 40],
+      [16,0, 20,0, 20],
+    ],
+    sa: [
+      [5,0, 9,0, 40],
+      [9,0, 18,0, 20],
+      [18,0, 20,0, 40],
+    ],
+    di: [
+      [6,0, 9,0, 40],
+      [9,0, 18,0, 20],
+      [18,0, 23,0, 40],
+    ]
+  }
+};
+
+/* =========================
+   OUTILS DATE
+========================= */
+function pad2(n){ return String(n).padStart(2,"0"); }
+function iso(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function inRange(dateISO,start,end){ return dateISO>=start && dateISO<=end; }
+function toMin(h,m){ return h*60 + m; }
+function minToHM(t){ return {h: Math.floor(t/60), m: t%60}; }
+
+/* Pâques (Meeus, grégorien) */
+function easterSunday(year){
+  const a=year%19, b=Math.floor(year/100), c=year%100, d=Math.floor(b/4), e=b%4;
+  const f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3);
+  const h=(19*a + b - d - g + 15)%30;
+  const i=Math.floor(c/4), k=c%4;
+  const l=(32 + 2*e + 2*i - h - k)%7;
+  const m=Math.floor((a + 11*h + 22*l)/451);
+  const month=Math.floor((h + l - 7*m + 114)/31);
+  const day=((h + l - 7*m + 114)%31)+1;
+  return new Date(year, month-1, day);
+}
+function addDays(dateObj, days){ const d=new Date(dateObj.getTime()); d.setDate(d.getDate()+days); return d; }
+function frenchPublicHolidaysISO(year){
+  const easter=easterSunday(year);
+  const list = [
+    `${year}-01-01`,
+    iso(addDays(easter, 1)),
+    `${year}-05-01`,
+    `${year}-05-08`,
+    iso(addDays(easter, 39)),
+    iso(addDays(easter, 50)),
+    `${year}-07-14`,
+    `${year}-08-15`,
+    `${year}-11-01`,
+    `${year}-11-11`,
+    `${year}-12-25`
+  ];
+  return new Set(list);
+}
+
+/* =========================
+   GÉNÉRATION HORAIRES (CONTINUE)
+========================= */
+function buildDeparturesContinuous(rules){
+  const times = [];
+  if(!rules || rules.length===0) return times;
+
+  let t = toMin(rules[0][0], rules[0][1]);
+  for(const [h1,m1,h2,m2,f] of rules){
+    const start = toMin(h1,m1);
+    const end   = toMin(h2,m2);
+    if (t < start) t = start;
+    while(t < end && t < 1440){
+      times.push(t);
+      t += f;
+    }
+  }
+  return Array.from(new Set(times)).sort((a,b)=>a-b);
+}
+
+function groupByHour(times){
+  const map = new Map();
+  for(const t of times){
+    const {h,m} = minToHM(t);
+    if(!map.has(h)) map.set(h, []);
+    map.get(h).push(m);
+  }
+  for(const [h,arr] of map.entries()){
+    arr.sort((a,b)=>a-b);
+    map.set(h, arr);
+  }
+  return map;
+}
+function renderMinutesChips(arr){
+  if(!arr || arr.length===0) return `<span class="empty">—</span>`;
+  return arr.map(m => `<span class="chip">${pad2(m)}</span>`).join("");
+}
+function hourCutsFromRules(rules){
+  const cuts = new Set();
+  for(let i=1;i<rules.length;i++){
+    const [h1,m1] = rules[i];
+    if(m1===0) cuts.add(h1);
+  }
+  return cuts;
+}
+function minFreq(rules){
+  if(!rules || rules.length===0) return null;
+  let m = Infinity;
+  for(const r of rules) m = Math.min(m, r[4]);
+  return (m===Infinity) ? null : m;
+}
+function isPeakHour(h, rules){
+  const peak = minFreq(rules);
+  if(peak === null) return false;
+  const t = h*60;
+  for(const [h1,m1,h2,m2,f] of rules){
+    const start = toMin(h1,m1), end = toMin(h2,m2);
+    if(t >= start && t < end) return f === peak;
+  }
+  return false;
+}
+
+/* =========================
+   BANDEAU FRÉQUENCES (complet + gris)
+========================= */
+function labelRange(h1,m1,h2,m2){
+  const a = `${pad2(h1)}:${pad2(m1)}`;
+  const b = (h2===24 && m2===0) ? "00:00" : `${pad2(h2)}:${pad2(m2)}`;
+  return `${a} – ${b}`;
+}
+function buildFrequencySegments(rules){
+  if(!rules || rules.length===0){
+    return [{h1:0,m1:0,h2:24,m2:0,f:null}];
+  }
+  const segs = [];
+  const first = rules[0];
+  if(first){
+    const [h1,m1] = first;
+    if(h1>0 || m1>0) segs.push({h1:0,m1:0,h2:h1,m2:m1,f:null});
+  }
+  for(const [h1,m1,h2,m2,f] of rules) segs.push({h1,m1,h2,m2,f});
+  const last = rules[rules.length-1];
+  if(last){
+    const [, , h2,m2] = last;
+    if(h2 < 24) segs.push({h1:h2,m1:m2,h2:24,m2:0,f:null});
+  }
+  return segs;
+}
+
+/* =========================
+   UPDATE (date choisie)
+========================= */
+function updateForDate(dateObj){
+  const todayISO = iso(dateObj);
+  const jf = frenchPublicHolidaysISO(dateObj.getFullYear());
+
+  // Hors période d'exploitation
+  const outOfOperate = (todayISO < OPERATE_START || todayISO > OPERATE_END);
+
+  let periode = "normal";
+  if(!outOfOperate){
+    for (const p of VACANCES){
+      if (inRange(todayISO, p[0], p[1])) { periode="vacances"; break; }
+    }
+  }
+
+  let type = "luve";
+  if (dateObj.getDay() === 6) type = "sa";
+  if (dateObj.getDay() === 0 || jf.has(todayISO)) type = "di";
+
+  const rules = (outOfOperate)
+    ? []
+    : ((SERVICES[periode] && SERVICES[periode][type]) ? SERVICES[periode][type] : []);
+
+  // Header
+  document.documentElement.style.setProperty("--line", LINE.color);
+  document.getElementById("lineTitle").textContent = `${LINE.terminusA} ⇄ ${LINE.terminusB}`;
+  document.getElementById("dirATxt").textContent = `${LINE.terminusA} → ${LINE.terminusB}`;
+  document.getElementById("dirBTxt").textContent = `${LINE.terminusB} → ${LINE.terminusA}`;
+
+  const frDate = dateObj.toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  document.getElementById("todayTxt").textContent = `Horaires du jour — ${frDate}`;
+
+  const labelType = (type==="luve") ? "LU–VE" : (type==="sa") ? "Samedi" : "Dimanche & JF";
+  const labelPeriode = outOfOperate
+    ? `Hors période d’exploitation (01/12/2025–12/04/2026)`
+    : ((periode==="vacances") ? "Période vacances scolaires" : "Période normale");
+
+  document.getElementById("periodLine").textContent =
+    `${labelPeriode}${outOfOperate ? "" : (" — " + labelType + (jf.has(todayISO) ? " (jour férié)" : ""))}`;
+
+  document.getElementById("gridBadge").innerHTML =
+    `<span class="badgeDot"></span> ${outOfOperate ? "Hors service" : labelType}`;
+
+  // Départs
+  const departures = buildDeparturesContinuous(rules);
+
+  if(departures.length > 0){
+    const first = minToHM(departures[0]);
+    const last  = minToHM(departures[departures.length-1]);
+    document.getElementById("firstDeparture").textContent = `${pad2(first.h)}:${pad2(first.m)}`;
+    document.getElementById("lastDeparture").textContent  = `${pad2(last.h)}:${pad2(last.m)}`;
+  } else {
+    document.getElementById("firstDeparture").textContent = "—";
+    document.getElementById("lastDeparture").textContent  = "—";
+  }
+
+  // Bandeau fréquences
+  const freqSegments = buildFrequencySegments(rules);
+  document.getElementById("freqBar").innerHTML = freqSegments.map(seg => {
+    const {h1,m1,h2,m2,f} = seg;
+    const width = (toMin(h2,m2) - toMin(h1,m1)) || 1;
+
+    if(f === null){
+      return `
+        <div class="seg" data-f="none" style="flex:${width}">
+          <div class="t">${labelRange(h1,m1,h2,m2)}</div>
+          <div class="s">Pas de service</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="seg" data-f="${f}" style="flex:${width}">
+        <div class="t">${labelRange(h1,m1,h2,m2)}</div>
+        <div class="s">toutes les ${f} min</div>
+      </div>
+    `;
+  }).join("");
+
+  // Grille
+  const byHour = groupByHour(departures);
+  let minHour = 24, maxHour = 0;
+  for(const h of byHour.keys()){
+    minHour = Math.min(minHour, h);
+    maxHour = Math.max(maxHour, h);
+  }
+
+  const tbody = document.getElementById("tbody");
+
+  if(departures.length === 0){
+    tbody.innerHTML =
+      `<tr><td class="hcol">—</td><td class="mins"><span class="empty">Pas de service</span></td><td class="mins"><span class="empty">Pas de service</span></td></tr>`;
+    return;
+  }
+
+  const cuts = hourCutsFromRules(rules);
+  let html = "";
+  for(let h=minHour; h<=maxHour; h++){
+    const mins = byHour.get(h) || [];
+    const cutClass = cuts.has(h) ? "cut" : "";
+    const peakClass = isPeakHour(h, rules) ? "peak" : "";
+    html += `
+      <tr class="${cutClass} ${peakClass}">
+        <td class="hcol">${pad2(h)}h</td>
+        <td class="mins">${renderMinutesChips(mins)}</td>
+        <td class="mins">${renderMinutesChips(mins)}</td>
+      </tr>
+    `;
+  }
+  tbody.innerHTML = html;
+}
+
+// init + date picker
+const picker = document.getElementById("datePicker");
+const today = new Date();
+if (picker) {
+  picker.value = iso(today);
+  picker.addEventListener("change", () => {
+    if (!picker.value) return;
+    updateForDate(new Date(picker.value + "T00:00:00"));
+  });
+}
+updateForDate(today);
+</script>
+
+</body>
+</html>
